@@ -6,21 +6,21 @@ on:
 
 jobs:
   test_cache:
-    runs-on: ubuntu-latest    
+    runs-on: macos-15
     steps:       
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      id: cache-test
-      with:
-        path: cacheFolder
-        key: cache-${{ github.run_id }}
-        restore-keys: cache-
+    - uses: actions/checkout@v4
     - run: |
-              mkdir -p cacheFolder
-              [ -e  cacheFolder/foo.txt ] || echo "0" > cacheFolder/foo.txt
+        brew update > /dev/null
+        brew install ccache 2>&1
     - run: |
-              value=$(cat cacheFolder/foo.txt)
-              next_value=$((value + 1))
-              echo "value: $value -> $next_value"
-              echo "$next_value" > cacheFolder/foo.txt
-               
+        clang++ --version
+        clang++ --std=c++2b has_cxx20_atomic_ref.cpp -c -o out.o && echo "Plain: OK" || echo "Plain: FAIL"
+        ccache clang++ --std=c++2b has_cxx20_atomic_ref.cpp -c -o out.o && echo "CCache: OK" || echo "CCache: FAIL"
+        sudo xcode-select -switch "/Applications/Xcode_16.2.app"
+        ccache -z
+        echo "Second compilation"
+        clang++ --version
+        clang++ --std=c++2b has_cxx20_atomic_ref.cpp -c -o out.o && echo "Plain: OK" || echo "Plain: FAIL"
+        ccache -s
+        ccache clang++ --std=c++2b has_cxx20_atomic_ref.cpp -c -o out.o && echo "CCache: OK" || echo "CCache: FAIL"
+        ccache -s
